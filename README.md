@@ -12,11 +12,9 @@ It creates:
 
 ## Hermes SSH install
 
-Replace `<OWNER>` with the GitHub username or organization that hosts this repo:
-
 ```bash
 mkdir -p ~/.hermes/skills/creative
-git clone git@github.com:<OWNER>/mard.git ~/.hermes/skills/creative/mard-pindou-pattern
+git clone git@github.com:rayalexvector/mard.git ~/.hermes/skills/creative/mard-pindou-pattern
 ```
 
 Then restart Hermes or start a new session. In an existing chat, use `/reset` if available.
