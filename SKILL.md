@@ -1,235 +1,271 @@
 ---
 name: mard-pindou-pattern
-description: Use when the user says “准备拼豆图纸生成” or sends an image to make a 拼豆/fuse-bead pattern. Prepare to receive the image, then generate a printable MARD 221 pattern with preview, labeled grids, and bead counts using the user's preferred layout rules.
+description: Use when the user says “准备拼豆图纸生成”, “准备做拼豆图纸”, “我要生成拼豆底稿”, or sends a bead-pattern generation request for MARD 221 colors. Generates printable perler/bead PDF patterns, previews, section color-code pages, and usage CSV from an image.
 version: 1.0.0
 author: Hermes Agent
 license: MIT
 metadata:
   hermes:
-    tags: [creative, pixel-art, fuse-beads, pindou, mard, printable]
-    related_skills: [pixel-art]
+    tags: [creative, mard, 拼豆, perler, beads, pdf, pillow]
+    related_skills: []
 ---
 
-# MARD 拼豆图纸生成
+# MARD 221 拼豆图纸生成
 
 ## Overview
 
-This skill captures the user's preferred workflow for generating printable 拼豆/fuse-bead patterns from images.
+This skill turns a user-supplied image into a printable MARD 221 拼豆图纸. It uses the local script:
 
-The user's stable preferences:
+```bash
+~/.hermes/scripts/mard221_printable_pattern.py
+```
 
-- Palette: use the locally researched **MARD 221** palette, not arbitrary colors.
-- Layout: follow the reference-style printable document: title page + original/preview + overview grid + color legend + sectioned labeled grids.
-- Size: **choose dimensions intelligently** based on image complexity and craft usability unless the user explicitly specifies a size.
-- If the user explicitly says “80×80 / 40×60 / 29×29拼板 / etc.”, obey that exact size.
-- Do **not** automatically switch to a “white background as empty/no bead” version unless the user asks for it. By default, white background is treated as beads/cells.
+The script uses Pillow to:
 
-Local assets already available on this machine:
+1. Read the input image.
+2. Decide an appropriate bead-grid size when the user did not specify one.
+3. Resize while preserving the original aspect ratio.
+4. Match every bead to the nearest MARD 221 standard RGB color.
+5. Export a finished preview PNG, a printable PDF, section color-code pages, and a usage CSV.
 
-- Palette CSV: `~/.hermes/data/mard221_palette.csv`
-- Palette JSON: `~/.hermes/data/mard221_palette.json`
-- Basic converter: `~/.hermes/scripts/mard221_template.py`
-- Printable PDF generator: `~/.hermes/scripts/mard221_printable_pattern.py`
+The MARD 221 palette is saved at:
 
-Bundled shareable files inside this skill directory:
+- `~/.hermes/data/mard221_palette.json`
+- `~/.hermes/data/mard221_palette.csv`
 
-- Palette JSON: `references/mard221_palette.json`
-- Printable PDF generator: `scripts/mard221_printable_pattern.py`
+A portable copy is bundled in this skill folder:
 
-When sharing this skill with another Hermes user, include the whole `mard-pindou-pattern/` folder so these bundled files travel with the skill.
+- `references/mard221_palette.json`
+- `scripts/mard221_printable_pattern.py`
 
-## Primary Trigger
+## Trigger / First Reply
 
-When the user says something like:
+When the user says any of these or similar phrases:
 
 - “准备拼豆图纸生成”
 - “准备做拼豆图纸”
-- “等下我发图，你生成拼豆图纸”
 - “我要生成拼豆底稿”
+- “帮我生成 MARD 拼豆图纸”
+- “做拼豆 PDF 图纸”
 
-Reply briefly that you are ready and prepared to receive the image within about 60 seconds.
+First reply exactly:
 
-Recommended response:
+> 准备好了，你在60秒内把图片发我就行。收到后我会按 MARD 221 色号，智能判断合适尺寸，参考打印版面生成：预览图、正式PDF图纸、分区色号图和用量表。
 
-> 准备好了，你在60秒内把图片发我就行。收到后我会按 MARD 221 色号，智能判断合适尺寸，参考你喜欢的打印版面生成：预览图、正式PDF图纸、分区色号图和用量表。
+Then wait for the image. When the image arrives, generate the outputs automatically.
 
-Do not ask many questions at this stage unless the user already mentions a constraint. The user wants a smooth “ready → send image → generate” workflow.
+## Core Rules
 
-## Image Handling Workflow
+### 1. Palette
 
-When the image arrives:
+Always use MARD 221 standard colors. The installed palette was scraped and cross-checked from:
 
-1. Use the latest attached image path from the chat context.
-2. Decide dimensions intelligently:
-   - Simple icon / small object: about `40–60` cells on long side.
-   - Anime avatar / character bust with facial details: about `70–90` cells on long side.
-   - Complex full-body / scene / lots of small details: about `90–120` cells on long side, unless too impractical.
-   - Keep aspect ratio unless the user specified exact width and height.
-   - For square character images, common choices are `70×70`, `80×80`, or `90×90` depending on clarity.
-3. Use MARD 221 nearest-color mapping.
-4. Generate:
-   - Printable PDF with overview + section pages.
-   - Page 1 PNG preview of the document.
-   - Pixel preview PNG.
-   - CSV bead count sheet.
-5. Verify outputs exist and inspect at least the homepage or a section page visually when practical.
-6. Send the PDF plus page preview and counts CSV.
+- `https://www.pindou.online/colors`
+- `https://peiseka.com/pindouseka.html`
 
-## Default Printable Layout
+The palette must contain exactly 221 unique color tags and fields at least:
 
-The preferred PDF structure:
+- `tag`
+- `hex`
+- `rgb`
 
-### Page 1 — Overview
-
-- Title: `MARD 221色拼豆图纸`
-- Metadata:
-  - size, e.g. `80×80 豆` or chosen dimensions
-  - total bead/grid count
-  - number of MARD colors used
-  - palette note: `MARD 221（HEX/RGB近似匹配）`
-- Two preview boxes:
-  - `原图`
-  - `成品预览`
-- Large overview grid:
-  - `WxH 总览网格（无色号，仅看效果）`
-  - show grid lines and thicker guide lines
-- Color legend on the right:
-  - columns: 色号 / 色块 / HEX / 数量
-  - sort by quantity descending
-- Note box:
-  - explain section pages, guide lines, and that cell text is MARD code.
-
-### Section Pages
-
-Split into printable sections, usually `40×40` cells per page.
-
-Each section page should include:
-
-- Title: `MARD拼豆分区图纸`
-- Subtitle:
-  - page number / section name
-  - row range
-  - column range
-  - MARD 221 color code note
-  - total pattern size
-- Labeled grid:
-  - row numbers on the left
-  - column numbers on top
-  - each colored cell labeled with MARD code
-  - thicker lines every 10 cells, guide lines every 5 cells
-- Optional right-side section color legend with counts.
-
-## Dimension Rules
-
-Do not force all patterns to `80×80`.
-
-Use these defaults unless the user specifies otherwise:
-
-| Image type | Suggested size |
-|---|---:|
-| very simple logo/icon | 40–50 long side |
-| cute sticker/simple character | 50–70 long side |
-| anime head/bust | 70–90 long side |
-| detailed anime portrait | 80–100 long side |
-| full-body character or complex art | 90–120 long side |
-
-If uncertain, generate a practical size first and mention why. You may include a smaller/larger alternative only if useful, but do not surprise the user with unwanted variants.
-
-## Background Rules
-
-Default: treat white background as regular cells/beads.
-
-Only use “white background empty/no bead” if the user explicitly asks for:
-
-- 白底不放豆
-- 空格版
-- 透明背景
-- 省豆
-- 去掉白底
-
-Do not automatically create an empty-background second version.
-
-## Commands
-
-Use the printable generator when available. On this machine the persistent script path is:
+Primary runtime path:
 
 ```bash
-python ~/.hermes/scripts/mard221_printable_pattern.py /path/to/image.jpg \
-  --width 80 --height 80 \
-  --out /tmp/mard_pattern
+~/.hermes/data/mard221_palette.json
 ```
 
-For shared installs, prefer the bundled script and palette inside the skill directory. Replace `$SKILL_DIR` with the installed skill folder, usually `~/.hermes/skills/creative/mard-pindou-pattern`:
+### 2. Size Selection
+
+Do **not** default to fixed `80×80`.
+
+If the user explicitly says `80×80`, `40×60`, `29×29 拼板`, etc., use the specified size strictly.
+
+If no size is specified, keep the original image ratio and choose an intelligent long side:
+
+- simple image: 40–60
+- normal character: 50–70
+- anime avatar / bust: 70–90
+- complex person / high-detail image: 90–120
+
+The installed script implements a complexity heuristic based on edge density, color variety, and entropy.
+
+### 3. White Background / Blank Spaces
+
+Default: **white background is still beads**.
+
+Only use blank/empty cells when the user explicitly says one of:
+
+- “白底不放豆”
+- “空格版”
+- “透明背景”
+- “省豆”
+- “去掉白底”
+
+In that case pass `--blank-white`.
+
+### 4. Printable Layout
+
+The PDF should follow a formal printable pattern layout:
+
+- Page 1:
+  - title
+  - dimensions
+  - total grid cells / bead count
+  - color count
+  - original image
+  - finished preview
+  - overview grid
+  - right-side color list with color code / swatch / HEX / quantity
+  - tips box
+- Later pages:
+  - about `40×40` section pages
+  - row/column labels
+  - MARD color code inside each cell
+  - 5/10-grid helper thick lines
+  - right-side local section usage statistics
+
+### 5. Deliverables
+
+Each generation must return the user these files:
+
+- formal PDF pattern
+- first-page preview PNG
+- finished preview PNG
+- usage CSV
+
+In chat, attach files with `MEDIA:/absolute/path` when supported.
+
+For this user, prefer converting the PDF into separate PNG page images and sending those page images directly, especially on WeChat where PDF/file delivery may fail or be missed. Keep the PDF/CSV locally available, but do not rely on PDF as the only deliverable.
+
+PDF-to-PNG conversion recipe:
 
 ```bash
-python "$SKILL_DIR/scripts/mard221_printable_pattern.py" /path/to/image.jpg \
-  --palette "$SKILL_DIR/references/mard221_palette.json" \
-  --width 80 --height 80 \
-  --out /tmp/mard_pattern
+python - <<'PY'
+from pathlib import Path
+import fitz
+pdf = Path('/tmp/mard_x.pdf')
+outdir = Path('/tmp/mard_x_png_pages')
+outdir.mkdir(exist_ok=True)
+doc = fitz.open(str(pdf))
+for i, page in enumerate(doc, start=1):
+    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+    pix.save(str(outdir / f'mard_x_page_{i:02d}.png'))
+PY
 ```
 
-If only a long side is chosen and the script supports auto-height:
+If the user says the result feels low-resolution or blurry, use the original image path, crop away unnecessary empty margins if appropriate, lightly increase contrast/sharpness, and regenerate with a modestly higher bead grid such as 80×80 or an equivalent image-ratio-preserving size.
+
+## Command Recipes
+
+### Auto-size generation
 
 ```bash
-python "$SKILL_DIR/scripts/mard221_printable_pattern.py" /path/to/image.jpg \
-  --palette "$SKILL_DIR/references/mard221_palette.json" \
-  --width 80 \
-  --out /tmp/mard_pattern
+python ~/.hermes/scripts/mard221_printable_pattern.py /path/to/input.png \
+  --output-prefix /tmp/mard_pattern
 ```
 
-For exact user sizes, pass both `--width` and `--height`.
+Outputs:
 
-For explicitly requested empty-background version:
+- `/tmp/mard_pattern.pdf`
+- `/tmp/mard_pattern_page1.png`
+- `/tmp/mard_pattern_preview.png`
+- `/tmp/mard_pattern_counts.csv`
+
+### Strict size
 
 ```bash
-python "$SKILL_DIR/scripts/mard221_printable_pattern.py" /path/to/image.jpg \
-  --palette "$SKILL_DIR/references/mard221_palette.json" \
-  --width 80 --height 80 \
-  --empty-white-threshold 248 \
-  --out /tmp/mard_pattern_empty
+python ~/.hermes/scripts/mard221_printable_pattern.py /path/to/input.png \
+  --output-prefix /tmp/mard_pattern \
+  --size 80x80
 ```
 
-## Delivery Format
+### Strict width or height while preserving ratio
 
-Send concise Chinese summary with native media attachments:
+```bash
+python ~/.hermes/scripts/mard221_printable_pattern.py /path/to/input.png \
+  --output-prefix /tmp/mard_pattern \
+  --width 60
+```
+
+### Blank-white / space-saving version
+
+Only when explicitly requested:
+
+```bash
+python ~/.hermes/scripts/mard221_printable_pattern.py /path/to/input.png \
+  --output-prefix /tmp/mard_pattern \
+  --blank-white
+```
+
+### Custom section size
+
+Default is 40×40. Use only when needed:
+
+```bash
+python ~/.hermes/scripts/mard221_printable_pattern.py /path/to/input.png \
+  --output-prefix /tmp/mard_pattern \
+  --section-size 40
+```
+
+## Suggested Chat Workflow
+
+1. Trigger phrase received → reply with the exact prepared message above. Do not change the user's trigger wording or the prepared reply wording.
+2. Wait for the uploaded image. When the image arrives after this trigger, generate the pattern automatically immediately; do not wait for the user to say “生成” again. If the user first asks to describe an image and then says “就是这张图 / 按之前要求生成 / use this image”, treat the most recently uploaded/seen image as the input for this skill.
+3. Inspect the user's trigger message and image message for explicit size or blank-white instructions.
+4. Locate the image path. In WeChat/Hermes sessions, uploaded images are often cached under `~/.hermes/image_cache/` or profile-specific cache directories such as `~/.hermes/profiles/*/cache/images/`. If no direct path is provided, find the most recent plausible image and verify its dimensions/timestamp before using it:
+
+```bash
+python - <<'PY'
+from pathlib import Path
+from PIL import Image
+import time
+roots = [Path.home()/'.hermes/image_cache', Path.home()/'.hermes/profiles']
+paths = []
+for r in roots:
+    if r.exists():
+        paths += list(r.rglob('*.jpg')) + list(r.rglob('*.jpeg')) + list(r.rglob('*.png')) + list(r.rglob('*.webp'))
+for p in sorted(paths, key=lambda p: p.stat().st_mtime, reverse=True)[:20]:
+    try:
+        im = Image.open(p)
+        print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(p.stat().st_mtime)), im.size, p)
+    except Exception:
+        pass
+PY
+```
+
+5. Run the generator with a safe unique prefix, e.g.:
+
+```bash
+python ~/.hermes/scripts/mard221_printable_pattern.py "$IMAGE_PATH" \
+  --output-prefix "/tmp/mard_$(date +%Y%m%d_%H%M%S)"
+```
+
+6. Verify outputs exist and are non-empty:
+
+```bash
+test -s /tmp/mard_x.pdf && test -s /tmp/mard_x_page1.png && \
+test -s /tmp/mard_x_preview.png && test -s /tmp/mard_x_counts.csv
+```
+
+7. Convert the PDF into separate PNG page images and send those pages directly in chat. Keep the PDF/CSV available if needed, but final delivery should prioritize PNG pages split one by one:
 
 ```text
-做好了：这版我按 [WxH] 生成，使用 MARD 221，共 [N] 色，[M] 格/颗。
+拼豆图纸已生成：这版为 [WxH]，共 [N] 颗豆，使用 [C] 种 MARD 色号。下面按 PNG 分页发你。
 
-PDF：
-MEDIA:/tmp/xxx.pdf
+第1页：首页总览
+MEDIA:/tmp/mard_x_png_pages/mard_x_page_01.png
 
-首页预览：
-MEDIA:/tmp/xxx_page1.png
-
-成品预览：
-MEDIA:/tmp/xxx_preview.png
-
-用量表：
-MEDIA:/tmp/xxx_counts.csv
+第2页：分区图纸
+MEDIA:/tmp/mard_x_png_pages/mard_x_page_02.png
+...
 ```
-
-If the size was chosen automatically, include one short sentence explaining the choice, e.g.:
-
-> 这张图细节集中在脸和发丝，我选了80×80，兼顾清晰度和工作量。
-
-## Common Pitfalls
-
-1. **Forcing 80×80 because the reference screenshot used it.** The user explicitly corrected this. Choose intelligently unless exact size is requested.
-2. **Auto-generating white-background-empty versions.** Do not do this unless requested.
-3. **Changing palettes.** Keep MARD 221 unless the user explicitly asks for another brand/palette.
-4. **Sending only a raw grid image.** The user prefers the printable PDF-style layout with overview, legend, and section pages.
-5. **Skipping verification.** At minimum check that PDF/PNG/CSV files exist; visually inspect the overview/section page when feasible.
-6. **Too many questions before receiving the image.** For the trigger phrase, just say ready and wait for the image.
 
 ## Verification Checklist
 
-- [ ] MARD 221 palette used.
-- [ ] Dimensions chosen intelligently or exact user size obeyed.
-- [ ] White background behavior matches user request.
-- [ ] PDF created.
-- [ ] Page 1 PNG created.
-- [ ] Preview PNG created.
-- [ ] Counts CSV created.
-- [ ] Section grids have row/column numbers and MARD codes.
-- [ ] Final response includes media links and a compact summary.
+- [ ] Palette JSON/CSV exist under `~/.hermes/data/`.
+- [ ] Palette contains exactly 221 unique MARD tags.
+- [ ] Script exists and compiles: `python -m py_compile ~/.hermes/scripts/mard221_printable_pattern.py`.
+- [ ] A test run produces PDF, page1 PNG, preview PNG, and counts CSV.
+- [ ] Default behavior treats white as beads.
+- [ ] `--blank-white` is used only when explicitly requested.

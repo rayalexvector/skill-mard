@@ -1,12 +1,16 @@
 {
-  "name": "MARD 221 standard palette",
-  "count": 221,
-  "sources": [
-    "https://www.pindou.online/colors",
-    "https://peiseka.com/pindouseka.html"
+  "name": "MARD 221 standard bead palette",
+  "source_urls": [
+    "https://peiseka.com/pindouseka.html",
+    "https://www.pindou.online/colors"
   ],
-  "retrieved": "2026-04-28",
-  "palette": [
+  "count": 221,
+  "fields": [
+    "tag",
+    "hex",
+    "rgb"
+  ],
+  "colors": [
     {
       "tag": "A1",
       "hex": "#FAF4C8",
