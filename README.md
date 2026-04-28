@@ -18,7 +18,7 @@
 
 ```bash
 mkdir -p ~/.hermes/skills/creative
-git clone https://github.com/rayalexvector/mard.git ~/.hermes/skills/creative/mard-pindou-pattern
+git clone https://github.com/rayalexvector/skill-mard.git ~/.hermes/skills/creative/mard-pindou-pattern
 ```
 
 ### 可选：SSH 安装
@@ -27,7 +27,7 @@ git clone https://github.com/rayalexvector/mard.git ~/.hermes/skills/creative/ma
 
 ```bash
 mkdir -p ~/.hermes/skills/creative
-git clone git@github.com:rayalexvector/mard.git ~/.hermes/skills/creative/mard-pindou-pattern
+git clone git@github.com:rayalexvector/skill-mard.git ~/.hermes/skills/creative/mard-pindou-pattern
 ```
 
 安装后，重启 Hermes，或在已有会话里使用 `/reset` 让 skill 生效。
