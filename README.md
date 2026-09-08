@@ -32,13 +32,18 @@ git clone git@github.com:rayalexvector/skill-mard.git ~/.hermes/skills/creative/
 
 安装后，重启 Hermes，或在已有会话里使用 `/reset` 让 skill 生效。
 
-如果缺少依赖，可以安装：
+使用 Python 3.10 或更新版本，在 skill 目录创建独立环境并安装固定版本依赖：
 
 ```bash
-pip install pillow pymupdf
+cd ~/.hermes/skills/creative/mard-pindou-pattern
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
 # Linux 环境如果 PDF 中文标签字体缺失，可安装：
 sudo apt install fonts-noto-cjk
 ```
+
+运行 skill 时使用该环境的 Python；其他 agent 或自定义安装目录同样适用。脚本和色板均在仓库内，不需要复制到 `~/.hermes/scripts` 或 `~/.hermes/data`。
 
 ## 使用方式
 
@@ -68,11 +73,10 @@ Hermes 会按固定回复确认已准备好接收图片：
 
 ## 手动脚本用法
 
-如果不通过 Hermes skill，也可以直接运行脚本：
+如果不通过 Hermes skill，也可以直接运行脚本。以下命令在安装目录执行，并先激活上面的虚拟环境。脚本默认加载随包色板，从任意工作目录使用脚本绝对路径也能运行：
 
 ```bash
 python scripts/mard221_printable_pattern.py input.jpg \
-  --palette references/mard221_palette.json \
   --output-prefix /tmp/mard_pattern
 ```
 
@@ -80,7 +84,6 @@ python scripts/mard221_printable_pattern.py input.jpg \
 
 ```bash
 python scripts/mard221_printable_pattern.py input.jpg \
-  --palette references/mard221_palette.json \
   --size 80x80 \
   --output-prefix /tmp/mard_pattern
 ```
@@ -89,7 +92,6 @@ python scripts/mard221_printable_pattern.py input.jpg \
 
 ```bash
 python scripts/mard221_printable_pattern.py input.jpg \
-  --palette references/mard221_palette.json \
   --long-side 80 \
   --output-prefix /tmp/mard_pattern
 ```
@@ -98,7 +100,6 @@ python scripts/mard221_printable_pattern.py input.jpg \
 
 ```bash
 python scripts/mard221_printable_pattern.py input.jpg \
-  --palette references/mard221_palette.json \
   --size 80x80 \
   --blank-white \
   --output-prefix /tmp/mard_pattern_empty
@@ -113,6 +114,16 @@ python scripts/mard221_printable_pattern.py input.jpg \
 /tmp/mard_pattern_counts.csv
 ```
 
+自定义色板可显式传入 `--palette /absolute/path.json`，或设置 `MARD221_PALETTE` 环境变量；命令行参数优先。自定义路径错误会直接报错。
+
+## 验证安装
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+测试使用临时合成图片，在安装目录之外执行脚本，检查 PDF 分页、PNG、用量总数、白底模式及色板覆盖，不读取用户图片。
+
 ## PDF 转 PNG 分页
 
 聊天平台不一定稳定接收 PDF；推荐把 PDF 每页转成 PNG 后分开发送：
@@ -120,13 +131,13 @@ python scripts/mard221_printable_pattern.py input.jpg \
 ```bash
 python - <<'PY'
 from pathlib import Path
-import fitz
+import pymupdf
 pdf = Path('/tmp/mard_pattern.pdf')
 outdir = Path('/tmp/mard_pattern_png_pages')
 outdir.mkdir(exist_ok=True)
-doc = fitz.open(str(pdf))
+doc = pymupdf.open(str(pdf))
 for i, page in enumerate(doc, start=1):
-    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+    pix = page.get_pixmap(matrix=pymupdf.Matrix(2, 2), alpha=False)
     pix.save(str(outdir / f'mard_pattern_page_{i:02d}.png'))
 PY
 ```
@@ -137,6 +148,8 @@ PY
 SKILL.md
 README.md
 LICENSE
+requirements.txt
+tests/test_installation.py
 scripts/mard221_printable_pattern.py
 references/mard221_palette.json
 ```
