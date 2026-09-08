@@ -30,20 +30,11 @@ RGB = Tuple[int, int, int]
 GridCell = Optional[str]
 
 def default_palette_path() -> Path:
-    """Find the installed MARD 221 palette across Hermes profile/home layouts."""
-    candidates = []
-    env = os.environ.get("MARD221_PALETTE")
-    if env:
-        candidates.append(Path(env).expanduser())
-    candidates.extend([
-        Path.home() / ".hermes" / "data" / "mard221_palette.json",
-        Path(__file__).resolve().parents[1] / "data" / "mard221_palette.json",
-        Path("/home/ubuntu/.hermes/data/mard221_palette.json"),
-    ])
-    for p in candidates:
-        if p.exists():
-            return p
-    return candidates[0] if candidates else Path("mard221_palette.json")
+    """Use an explicit override or the palette bundled beside this script."""
+    override = os.environ.get("MARD221_PALETTE")
+    if override:
+        return Path(override).expanduser()
+    return Path(__file__).resolve().parents[1] / "references" / "mard221_palette.json"
 
 
 DEFAULT_PALETTE = default_palette_path()
